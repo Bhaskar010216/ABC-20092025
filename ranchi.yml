@@ -4,7 +4,7 @@ trigger:
       - main
 
 pool:
-  name: A11
+  name: linux-agent
 
 variables:
   registryName: 'kolkata'
