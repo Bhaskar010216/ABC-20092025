@@ -1,0 +1,48 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  registryName: 'bhaskarcontainerregistry'
+  registryResourceGroup: 'raj-rg-20thsep'
+  imageNameCleanup: 'myscript-cleanup'
+  imageNameCreate: 'myscript-create'
+
+stages:
+
+- stage: BuildAndPush
+  displayName: 'Build and Push Docker Images'
+  jobs:
+    - job: BuildPushJob
+      steps:
+        - checkout: self
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: '78c8e033-d7c9-4fbd-9e14-093072a5948c'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az acr login --name $(registryName)
+              docker build --target cleanup -t $(registryName).azurecr.io/$(imageNameCleanup):latest .
+              docker push $(registryName).azurecr.io/$(imageNameCleanup):latest
+              docker build --target create -t $(registryName).azurecr.io/$(imageNameCreate):latest .
+              docker push $(registryName).azurecr.io/$(imageNameCreate):latest
+
+- stage: DeployContainers
+  displayName: 'Run Multiple Containers'
+  dependsOn: BuildAndPush
+  jobs:
+    - job: RunContainers
+      steps:
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: '78c8e033-d7c9-4fbd-9e14-093072a5948c'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az container create --resource-group $(registryResourceGroup) --name cleanup-container-1 --image $(registryName).azurecr.io/$(imageNameCleanup):latest --cpu 1 --memory 1 --restart-policy Always --dns-name-label cleanupcontainer1
+              az container create --resource-group $(registryResourceGroup) --name create-container-1 --image $(registryName).azurecr.io/$(imageNameCreate):latest --cpu 1 --memory 1 --restart-policy Always --dns-name-label createcontainer1
