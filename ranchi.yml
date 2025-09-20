@@ -1,3 +1,17 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: linux-agent
+
+variables:
+  registryName: 'kolkata'
+  registryResourceGroup: 'raj-rg-20thsep'
+  imageNameCleanup: 'myscript-cleanup'
+  imageNameCreate: 'myscript-create'
+
 stages:
 
 - stage: BuildAndPush
@@ -34,4 +48,3 @@ stages:
             inlineScript: |
               az container create --resource-group $(registryResourceGroup) --name cleanup-container-1 --image $(registryName).azurecr.io/$(imageNameCleanup):latest --cpu 1 --memory 1 --restart-policy Always --dns-name-label cleanupcontainer1
               az container create --resource-group $(registryResourceGroup) --name create-container-1 --image $(registryName).azurecr.io/$(imageNameCreate):latest --cpu 1 --memory 1 --restart-policy Always --dns-name-label createcontainer1
-
