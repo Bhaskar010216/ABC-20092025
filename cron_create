@@ -1,0 +1,1 @@
+* * * * * abc /opt/myapp/myscript.sh "1" >> /var/log/cron.log 2>&1
