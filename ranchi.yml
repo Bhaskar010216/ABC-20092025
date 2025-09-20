@@ -1,26 +1,37 @@
-pool:
-  name: 'linux-agent'
-     
- 
 stages:
-- stage: DockerBuild
-  displayName: "Build and Push Ubuntu 22.04 Docker Image"
+
+- stage: BuildAndPush
+  displayName: 'Build and Push Docker Images'
   jobs:
-  - job: BuildAndPush
-    displayName: "Build and Push to ACR"
-    steps:
-    - task: Docker@2
-      displayName: "Login to ACR"
-      inputs:
-        command: login
-        containerRegistry: 'kolkata'   
-    - task: Docker@2
-      displayName: "Build and Push Ubuntu Image"
-      inputs:
-        command: buildAndPush
-        containerRegistry: 'kolkata'   
-        repository: poco   
-        dockerfile: 'Dockerfile'
-        tags: |
-          $(Build.BuildId)
-          latest
+    - job: BuildPushJob
+      displayName: 'Build and Push Images'
+      steps:
+        - checkout: self
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: 'JH11'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az acr login --name $(registryName)
+              docker build --target cleanup -t $(registryName).azurecr.io/$(imageNameCleanup):latest .
+              docker push $(registryName).azurecr.io/$(imageNameCleanup):latest
+              docker build --target create -t $(registryName).azurecr.io/$(imageNameCreate):latest .
+              docker push $(registryName).azurecr.io/$(imageNameCreate):latest
+
+- stage: DeployContainers
+  displayName: 'Run Multiple Containers'
+  dependsOn: BuildAndPush
+  jobs:
+    - job: RunContainers
+      displayName: 'Deploy Containers'
+      steps:
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: 'JH11'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az container create --resource-group $(registryResourceGroup) --name cleanup-container-1 --image $(registryName).azurecr.io/$(imageNameCleanup):latest --cpu 1 --memory 1 --restart-policy Always --dns-name-label cleanupcontainer1
+              az container create --resource-group $(registryResourceGroup) --name create-container-1 --image $(registryName).azurecr.io/$(imageNameCreate):latest --cpu 1 --memory 1 --restart-policy Always --dns-name-label createcontainer1
+
