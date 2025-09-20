@@ -7,7 +7,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  registryName: 'bhaskarcontainerregistry'
+  registryName: 'kolkata'
   registryResourceGroup: 'raj-rg-20thsep'
   imageNameCleanup: 'myscript-cleanup'
   imageNameCreate: 'myscript-create'
@@ -22,7 +22,7 @@ stages:
         - checkout: self
         - task: AzureCLI@2
           inputs:
-            azureSubscription: '78c8e033-d7c9-4fbd-9e14-093072a5948c'
+            azureSubscription: 'JH11'
             scriptType: bash
             scriptLocation: inlineScript
             inlineScript: |
@@ -40,7 +40,7 @@ stages:
       steps:
         - task: AzureCLI@2
           inputs:
-            azureSubscription: '78c8e033-d7c9-4fbd-9e14-093072a5948c'
+            azureSubscription: 'JH11'
             scriptType: bash
             scriptLocation: inlineScript
             inlineScript: |
